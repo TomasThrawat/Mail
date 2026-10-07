@@ -58,10 +58,12 @@ class GmailService {
       throw StateError('Google Sign-In authentication is unavailable.');
     }
 
-    // Clear any stale app-level Credential Manager relationship before a new
-    // interactive sign-in. Credential Manager can otherwise enter its
-    // AccountReauth path and surface configuration/state failures as code 16.
-    await signIn.signOut();
+    // Fully revoke the existing Google authorization relationship before a
+    // new interactive sign-in. The official google_sign_in Android example
+    // uses disconnect() for this reset; signOut() alone does not revoke the
+    // authorization relationship and can leave Credential Manager on its
+    // AccountReauth path, which may surface as [16] Account reauth failed.
+    await signIn.disconnect();
 
     // Authenticate the account first, then request Gmail scopes separately.
     final GoogleSignInAccount user = await signIn.authenticate();
@@ -171,7 +173,9 @@ class GmailService {
   }
 
   Future<void> signOutCurrent() async {
-    await signIn.signOut();
+    // Disconnect rather than only sign out so the next login starts from a
+    // clean Credential Manager authorization relationship.
+    await signIn.disconnect();
     _apis.clear();
     _users.clear();
   }
