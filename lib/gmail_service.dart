@@ -261,9 +261,18 @@ class GmailService {
     await _ensureAuthorized(email);
     final GmailApi api = _requireApi(email);
 
+    // Drain the currently authorized mailbox in bounded server-side batches.
+    // includeSpamTrash makes "Delete All" cover every mailbox message, not
+    // only Inbox, while the "me" user ID scopes deletion to this account.
+    const int batchSize = 500;
+
     while (true) {
       final List<Message> messages =
-          (await api.users.messages.list('me', maxResults: 500)).messages ??
+          (await api.users.messages.list(
+            'me',
+            maxResults: batchSize,
+            includeSpamTrash: true,
+          )).messages ??
           const <Message>[];
       final List<String> ids = messages
           .map((Message message) => message.id)
@@ -274,8 +283,11 @@ class GmailService {
         return;
       }
 
-      await Future.wait(
-        ids.map((String id) => api.users.messages.delete('me', id)),
+      // Avoid hundreds of concurrent single-message delete calls. Gmail
+      // exposes batchDelete specifically for deleting many message IDs.
+      await api.users.messages.batchDelete(
+        'me',
+        BatchDeleteMessagesRequest()..ids = ids,
       );
     }
   }
