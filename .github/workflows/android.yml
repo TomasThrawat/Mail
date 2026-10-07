@@ -1,0 +1,57 @@
+name: Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate Android platform
+        run: flutter create --platforms=android --org com.hyouka mail_generated && cp -r mail_generated/android ./android && rm -rf mail_generated
+
+      - name: Set application identity
+        run: |
+          sed -i "s/applicationId = \"com.hyouka.mail_generated\"/applicationId = \"com.hyouka.mail\"/" android/app/build.gradle.kts
+          sed -i "s/namespace = \"com.hyouka.mail_generated\"/namespace = \"com.hyouka.mail\"/" android/app/build.gradle.kts
+
+      - name: Get packages
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+      - name: Build arm64 release APK
+        run: flutter build apk --release --target-platform android-arm64
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: mail-arm64-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+
+      - name: Commit generated Android platform
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add android
+          git diff --cached --quiet || git commit -m "build: add generated Android platform"
+          git push

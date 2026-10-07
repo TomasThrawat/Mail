@@ -4,20 +4,19 @@ publish_to: 'none'
 version: 0.1.0+1
 
 environment:
-  sdk: '>=3.4.0 <4.0.0'
+  sdk: '>=3.6.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-  google_sign_in: ^6.2.2
-  googleapis: ^13.2.0
-  googleapis_auth: ^1.6.0
-  http: ^1.2.2
-  shared_preferences: ^2.3.2
-  flutter_local_notifications: ^17.2.3
+  google_sign_in: ^7.2.0
+  extension_google_sign_in_as_googleapis_auth: ^3.0.0
+  googleapis: ^17.0.0
+  shared_preferences: ^2.5.3
+  flutter_local_notifications: ^19.4.2
 
- dev_dependencies:
+dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
