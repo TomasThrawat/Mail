@@ -138,10 +138,17 @@ jobs:
           APKSIGNER="$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/apksigner"
           test -x "$APKSIGNER"
 
+          CERT_OUTPUT="$("$APKSIGNER" verify --print-certs "$APK" 2>&1)"
+          printf '%s\n' "$CERT_OUTPUT"
+
           CERT_SHA1="$(
-            "$APKSIGNER" verify --print-certs "$APK" 2>&1 |
-            sed -nE 's/^Signer #1 certificate SHA-1 digest: //p' |
-            head -n1
+            printf '%s\n' "$CERT_OUTPUT" |
+            awk 'tolower($0) ~ /certificate sha-1 digest:/ {
+              sub(/^.*certificate sha-1 digest:[[:space:]]*/, "")
+              gsub(/[[:space:]:]/, "")
+              print toupper($0)
+              exit
+            }'
           )"
           EXPECTED_SHA1="7989FBE11C3236B49E76AE325012189DCE2B6E80"
 
