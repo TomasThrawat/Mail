@@ -674,7 +674,11 @@ class SettingsPage extends StatelessWidget {
           ),
           RadioGroup<bool>(
             groupValue: pureBlack,
-            onChanged: onTheme,
+            onChanged: (bool? value) {
+              if (value != null) {
+                onTheme(value);
+              }
+            },
             child: Column(
               children: <Widget>[
                 ListTile(
