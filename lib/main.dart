@@ -33,8 +33,7 @@ class _MailAppState extends State<MailApp> {
   }
 
   Future<void> _loadSettings() async {
-    final SharedPreferences preferences =
-        await SharedPreferences.getInstance();
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
     if (!mounted) {
       return;
     }
@@ -46,8 +45,7 @@ class _MailAppState extends State<MailApp> {
   }
 
   Future<void> _saveSettings() async {
-    final SharedPreferences preferences =
-        await SharedPreferences.getInstance();
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
     await preferences.setBool('pureBlack', pureBlack);
     await preferences.setBool('notificationsOn', notificationsOn);
     await preferences.setString('language', locale.languageCode);
@@ -94,9 +92,8 @@ class _MailAppState extends State<MailApp> {
         useMaterial3: true,
       ),
       builder: (BuildContext context, Widget? child) {
-        final TextDirection direction = locale.languageCode == 'ar'
-            ? TextDirection.rtl
-            : TextDirection.ltr;
+        final TextDirection direction =
+            locale.languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr;
         return Directionality(
           textDirection: direction,
           child: child ?? const SizedBox.shrink(),
@@ -185,8 +182,9 @@ class _MailPageState extends State<MailPage> {
   }
 
   void _upsertAccount(MailAccount value) {
-    final int index =
-        accounts.indexWhere((MailAccount item) => item.email == value.email);
+    final int index = accounts.indexWhere(
+      (MailAccount item) => item.email == value.email,
+    );
     if (index == -1) {
       accounts.add(value);
     } else {
@@ -247,8 +245,9 @@ class _MailPageState extends State<MailPage> {
 
     setState(() => loading = true);
     try {
-      final List<MailMessage> result =
-          await widget.gmail.loadInbox(selected.email);
+      final List<MailMessage> result = await widget.gmail.loadInbox(
+        selected.email,
+      );
       if (mounted) {
         setState(() => messages = result);
       }
@@ -292,9 +291,11 @@ class _MailPageState extends State<MailPage> {
       await widget.gmail.deleteMessage(selected.email, message.id);
       if (mounted) {
         setState(
-          () => messages = messages
-              .where((MailMessage item) => item.id != message.id)
-              .toList(),
+          () =>
+              messages =
+                  messages
+                      .where((MailMessage item) => item.id != message.id)
+                      .toList(),
         );
       }
     } catch (error) {
@@ -333,9 +334,9 @@ class _MailPageState extends State<MailPage> {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -362,38 +363,32 @@ class _MailPageState extends State<MailPage> {
         ],
       ),
       body: _buildBody(),
-      floatingActionButton: selected == null
-          ? FloatingActionButton.extended(
-              onPressed: authenticating ? null : _addAccount,
-              backgroundColor:
-                  widget.pureBlack ? Colors.white : Colors.black,
-              foregroundColor:
-                  widget.pureBlack ? Colors.black : Colors.white,
-              icon: const Icon(Icons.add),
-              label: Text(
-                authenticating
-                    ? tr('Signing in...', 'جاري تسجيل الدخول...')
-                    : tr('Add email', 'إضافة بريد إلكتروني'),
-              ),
-            )
-          : null,
+      floatingActionButton:
+          selected == null
+              ? FloatingActionButton.extended(
+                onPressed: authenticating ? null : _addAccount,
+                backgroundColor: widget.pureBlack ? Colors.white : Colors.black,
+                foregroundColor: widget.pureBlack ? Colors.black : Colors.white,
+                icon: const Icon(Icons.add),
+                label: Text(
+                  authenticating
+                      ? tr('Signing in...', 'جاري تسجيل الدخول...')
+                      : tr('Add email', 'إضافة بريد إلكتروني'),
+                ),
+              )
+              : null,
     );
   }
 
   Widget _buildBody() {
     if (loading && messages.isEmpty) {
-      return Center(
-        child: Text(tr('Loading...', 'جاري التحميل...')),
-      );
+      return Center(child: Text(tr('Loading...', 'جاري التحميل...')));
     }
 
     if (account == null) {
       return Center(
         child: Text(
-          tr(
-            'Add a Google account to start.',
-            'أضف حساب Google للبدء.',
-          ),
+          tr('Add a Google account to start.', 'أضف حساب Google للبدء.'),
           textAlign: TextAlign.center,
         ),
       );
@@ -415,42 +410,34 @@ class _MailPageState extends State<MailPage> {
       onRefresh: _refresh,
       child: ListView.builder(
         itemCount: messages.length,
-        itemBuilder: (BuildContext context, int index) =>
-            _messageTile(messages[index]),
+        itemBuilder:
+            (BuildContext context, int index) => _messageTile(messages[index]),
       ),
     );
   }
 
   Widget _messageTile(MailMessage message) {
-    final String subject = message.subject == '(No subject)'
-        ? tr('(No subject)', '(بدون موضوع)')
-        : message.subject;
+    final String subject =
+        message.subject == '(No subject)'
+            ? tr('(No subject)', '(بدون موضوع)')
+            : message.subject;
 
     return ListTile(
-      title: Text(
-        message.sender,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: Text(
-        subject,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
+      title: Text(message.sender, maxLines: 1, overflow: TextOverflow.ellipsis),
+      subtitle: Text(subject, maxLines: 1, overflow: TextOverflow.ellipsis),
       trailing: IconButton(
         tooltip: tr('Delete message', 'حذف الرسالة'),
         onPressed: () => _deleteMessage(message),
         icon: const Icon(Icons.delete_outline),
       ),
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute<void>(
-          builder: (_) => MessagePage(
-            message: message,
-            locale: widget.locale,
+      onTap:
+          () => Navigator.push(
+            context,
+            MaterialPageRoute<void>(
+              builder:
+                  (_) => MessagePage(message: message, locale: widget.locale),
+            ),
           ),
-        ),
-      ),
     );
   }
 
@@ -467,9 +454,7 @@ class _MailPageState extends State<MailPage> {
                 ListTile(
                   leading: AccountAvatar(account: account),
                   title: Text(account!.email),
-                  subtitle: Text(
-                    tr('Current account', 'الحساب الحالي'),
-                  ),
+                  subtitle: Text(tr('Current account', 'الحساب الحالي')),
                 ),
               ...accounts.map(
                 (MailAccount item) => ListTile(
@@ -505,38 +490,37 @@ class _MailPageState extends State<MailPage> {
   void _confirmDeleteAll() {
     showDialog<void>(
       context: context,
-      builder: (BuildContext context) => AlertDialog(
-        title: Text(
-          tr('Delete all messages?', 'حذف كل الرسائل؟'),
-        ),
-        content: Text(
-          tr(
-            'Do you want to delete all the messages?',
-            'هل تريد حذف كل الرسائل؟',
-          ),
-        ),
-        actions: <Widget>[
-          TextButton(
-            style: TextButton.styleFrom(
-              backgroundColor: Colors.black,
-              foregroundColor: Colors.white,
+      builder:
+          (BuildContext context) => AlertDialog(
+            title: Text(tr('Delete all messages?', 'حذف كل الرسائل؟')),
+            content: Text(
+              tr(
+                'Do you want to delete all the messages?',
+                'هل تريد حذف كل الرسائل؟',
+              ),
             ),
-            onPressed: () => Navigator.pop(context),
-            child: Text(tr('Cancel', 'إلغاء')),
+            actions: <Widget>[
+              TextButton(
+                style: TextButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () => Navigator.pop(context),
+                child: Text(tr('Cancel', 'إلغاء')),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  unawaited(_deleteAll());
+                },
+                child: Text(tr('Delete', 'حذف')),
+              ),
+            ],
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-              unawaited(_deleteAll());
-            },
-            child: Text(tr('Delete', 'حذف')),
-          ),
-        ],
-      ),
     );
   }
 
@@ -544,35 +528,33 @@ class _MailPageState extends State<MailPage> {
     Navigator.push<void>(
       context,
       MaterialPageRoute<void>(
-        builder: (_) => SettingsPage(
-          locale: widget.locale,
-          pureBlack: widget.pureBlack,
-          notificationsOn: widget.notificationsOn,
-          onTheme: widget.onTheme,
-          onLanguage: widget.onLanguage,
-          onNotifications: widget.onNotifications,
-          onSignOut: _signOut,
-        ),
+        builder:
+            (_) => SettingsPage(
+              locale: widget.locale,
+              pureBlack: widget.pureBlack,
+              notificationsOn: widget.notificationsOn,
+              onTheme: widget.onTheme,
+              onLanguage: widget.onLanguage,
+              onNotifications: widget.onNotifications,
+              onSignOut: _signOut,
+            ),
       ),
     );
   }
 }
 
 class AccountAvatar extends StatelessWidget {
-  const AccountAvatar({
-    super.key,
-    required this.account,
-    this.radius = 20,
-  });
+  const AccountAvatar({super.key, required this.account, this.radius = 20});
 
   final MailAccount? account;
   final double radius;
 
   @override
   Widget build(BuildContext context) {
-    final String fallback = account?.email.trim().isNotEmpty == true
-        ? account!.email.trim()[0].toUpperCase()
-        : 'M';
+    final String fallback =
+        account?.email.trim().isNotEmpty == true
+            ? account!.email.trim()[0].toUpperCase()
+            : 'M';
 
     if (account?.photoUrl != null && account!.photoUrl!.isNotEmpty) {
       return CircleAvatar(
@@ -587,27 +569,19 @@ class AccountAvatar extends StatelessWidget {
       foregroundColor: Theme.of(context).colorScheme.surface,
       child: Text(
         fallback,
-        style: TextStyle(
-          fontSize: radius,
-          fontWeight: FontWeight.w600,
-        ),
+        style: TextStyle(fontSize: radius, fontWeight: FontWeight.w600),
       ),
     );
   }
 }
 
 class MessagePage extends StatelessWidget {
-  const MessagePage({
-    super.key,
-    required this.message,
-    required this.locale,
-  });
+  const MessagePage({super.key, required this.message, required this.locale});
 
   final MailMessage message;
   final Locale locale;
 
-  String tr(String en, String ar) =>
-      locale.languageCode == 'ar' ? ar : en;
+  String tr(String en, String ar) => locale.languageCode == 'ar' ? ar : en;
 
   @override
   Widget build(BuildContext context) {
@@ -658,8 +632,7 @@ class SettingsPage extends StatelessWidget {
   final ValueChanged<bool> onNotifications;
   final VoidCallback onSignOut;
 
-  String tr(String en, String ar) =>
-      locale.languageCode == 'ar' ? ar : en;
+  String tr(String en, String ar) => locale.languageCode == 'ar' ? ar : en;
 
   @override
   Widget build(BuildContext context) {

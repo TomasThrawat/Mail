@@ -11,9 +11,7 @@ class GmailService {
 
   final GoogleSignIn signIn;
 
-  static const List<String> scopes = <String>[
-    'https://mail.google.com/',
-  ];
+  static const List<String> scopes = <String>['https://mail.google.com/'];
 
   static const String _serverClientId = String.fromEnvironment(
     'GOOGLE_SERVER_CLIENT_ID',
@@ -59,10 +57,7 @@ class GmailService {
     final GoogleSignInAccount user = await signIn.authenticate(
       scopeHint: scopes,
     );
-    final MailAccount? account = await _authorize(
-      user,
-      promptIfNeeded: true,
-    );
+    final MailAccount? account = await _authorize(user, promptIfNeeded: true);
     if (account == null) {
       throw StateError('Gmail authorization was not granted.');
     }
@@ -73,8 +68,9 @@ class GmailService {
     GoogleSignInAccount user, {
     required bool promptIfNeeded,
   }) async {
-    GoogleSignInClientAuthorization? authorization =
-        await user.authorizationClient.authorizationForScopes(scopes);
+    GoogleSignInClientAuthorization? authorization = await user
+        .authorizationClient
+        .authorizationForScopes(scopes);
 
     if (authorization == null && promptIfNeeded) {
       authorization = await user.authorizationClient.authorizeScopes(scopes);
@@ -98,10 +94,7 @@ class GmailService {
     if (user == null) {
       throw StateError('The selected Google account is not available.');
     }
-    final MailAccount? account = await _authorize(
-      user,
-      promptIfNeeded: true,
-    );
+    final MailAccount? account = await _authorize(user, promptIfNeeded: true);
     if (account == null) {
       throw StateError('Gmail authorization was not granted.');
     }
@@ -116,21 +109,18 @@ class GmailService {
 
     final List<Message> refs =
         (await api.users.messages.list(
-      'me',
-      labelIds: const <String>['INBOX'],
-      maxResults: maxResults,
-    ))
-            .messages ??
+          'me',
+          labelIds: const <String>['INBOX'],
+          maxResults: maxResults,
+        )).messages ??
         const <Message>[];
 
     final List<MailMessage> messages = await Future.wait(
-      refs.where((Message ref) => ref.id != null).map(
+      refs
+          .where((Message ref) => ref.id != null)
+          .map(
             (Message ref) async => _toMailMessage(
-              await api.users.messages.get(
-                'me',
-                ref.id!,
-                format: 'full',
-              ),
+              await api.users.messages.get('me', ref.id!, format: 'full'),
             ),
           ),
     );
@@ -138,8 +128,8 @@ class GmailService {
     messages.sort(
       (MailMessage a, MailMessage b) =>
           (b.date ?? DateTime.fromMillisecondsSinceEpoch(0)).compareTo(
-        a.date ?? DateTime.fromMillisecondsSinceEpoch(0),
-      ),
+            a.date ?? DateTime.fromMillisecondsSinceEpoch(0),
+          ),
     );
     return messages;
   }
@@ -156,7 +146,7 @@ class GmailService {
     while (true) {
       final List<Message> messages =
           (await api.users.messages.list('me', maxResults: 500)).messages ??
-              const <Message>[];
+          const <Message>[];
       final List<String> ids = messages
           .map((Message message) => message.id)
           .whereType<String>()
@@ -207,12 +197,11 @@ class GmailService {
           header.name!.toLowerCase(): header.value!,
     };
 
-    final int? internalMilliseconds = int.tryParse(
-      message.internalDate ?? '',
-    );
-    final DateTime? date = internalMilliseconds == null
-        ? null
-        : DateTime.fromMillisecondsSinceEpoch(internalMilliseconds);
+    final int? internalMilliseconds = int.tryParse(message.internalDate ?? '');
+    final DateTime? date =
+        internalMilliseconds == null
+            ? null
+            : DateTime.fromMillisecondsSinceEpoch(internalMilliseconds);
 
     return MailMessage(
       id: message.id ?? '',
@@ -235,8 +224,7 @@ class GmailService {
       return _decode(data);
     }
 
-    for (final MessagePart child
-        in part.parts ?? const <MessagePart>[]) {
+    for (final MessagePart child in part.parts ?? const <MessagePart>[]) {
       final String text = _extractText(child);
       if (text.trim().isNotEmpty) {
         return text;
@@ -252,24 +240,24 @@ class GmailService {
 
   String _decode(String value) {
     final String normalized = value.replaceAll('-', '+').replaceAll('_', '/');
-    final String padded =
-        normalized.padRight((normalized.length + 3) ~/ 4 * 4, '=');
-    return utf8.decode(
-      base64.decode(padded),
-      allowMalformed: true,
+    final String padded = normalized.padRight(
+      (normalized.length + 3) ~/ 4 * 4,
+      '=',
     );
+    return utf8.decode(base64.decode(padded), allowMalformed: true);
   }
 
-  String _stripHtml(String html) => html
-      .replaceAll(
-        RegExp(r'<style[\s\S]*?</style>', caseSensitive: false),
-        ' ',
-      )
-      .replaceAll(
-        RegExp(r'<script[\s\S]*?</script>', caseSensitive: false),
-        ' ',
-      )
-      .replaceAll(RegExp(r'<[^>]*>'), ' ')
-      .replaceAll(RegExp(r'\s+'), ' ')
-      .trim();
+  String _stripHtml(String html) =>
+      html
+          .replaceAll(
+            RegExp(r'<style[\s\S]*?</style>', caseSensitive: false),
+            ' ',
+          )
+          .replaceAll(
+            RegExp(r'<script[\s\S]*?</script>', caseSensitive: false),
+            ' ',
+          )
+          .replaceAll(RegExp(r'<[^>]*>'), ' ')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim();
 }

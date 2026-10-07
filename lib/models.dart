@@ -1,5 +1,12 @@
 class MailMessage {
-  const MailMessage({required this.id, required this.sender, required this.subject, required this.date, required this.body, this.unread = false});
+  const MailMessage({
+    required this.id,
+    required this.sender,
+    required this.subject,
+    required this.date,
+    required this.body,
+    this.unread = false,
+  });
   final String id;
   final String sender;
   final String subject;
