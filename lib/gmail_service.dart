@@ -13,8 +13,12 @@ class GmailService {
 
   static const List<String> scopes = <String>['https://mail.google.com/'];
 
+  // OAuth client IDs are public identifiers, so keep the Web client ID as the
+  // default. The build-time value can still override it for another project.
   static const String _serverClientId = String.fromEnvironment(
     'GOOGLE_SERVER_CLIENT_ID',
+    defaultValue:
+        '1057557137418-shkm3tmihedijreur8u8lvf3d84tnpmo.apps.googleusercontent.com',
   );
 
   final Map<String, GmailApi> _apis = <String, GmailApi>{};
@@ -54,9 +58,12 @@ class GmailService {
       throw StateError('Google Sign-In authentication is unavailable.');
     }
 
+    // Clear any stale app-level Credential Manager relationship before a new
+    // interactive sign-in. Credential Manager can otherwise enter its
+    // AccountReauth path and surface configuration/state failures as code 16.
+    await signIn.signOut();
+
     // Authenticate the account first, then request Gmail scopes separately.
-    // This is the recommended google_sign_in 7.x flow and avoids the optional
-    // combined Credential Manager authentication+authorization path.
     final GoogleSignInAccount user = await signIn.authenticate();
     final MailAccount? account = await _authorize(user, promptIfNeeded: true);
     if (account == null) {
