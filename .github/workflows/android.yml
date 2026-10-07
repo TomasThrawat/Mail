@@ -63,7 +63,7 @@ jobs:
               ;;
           esac
 
-          APPLICATION_ID="$(sed -nE 's/^[[:space:]]*applicationId[[:space:]]*=[[:space:]]*"([^"]+)".*/\\1/p' android/app/build.gradle.kts | head -n1)"
+          APPLICATION_ID="$(sed -nE 's/^[[:space:]]*applicationId[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' android/app/build.gradle.kts | head -n1)"
           if [ "$APPLICATION_ID" != "com.hyouka.mail" ]; then
             echo "ERROR: unexpected Android applicationId: $APPLICATION_ID"
             exit 1
