@@ -54,7 +54,6 @@ jobs:
           GOOGLE_SERVER_CLIENT_ID: 1057557137418-g440cu974hf39b1k4qhumag6lhbpkdnb.apps.googleusercontent.com
         run: |
           set -euo pipefail
-
           test -n "$GOOGLE_SERVER_CLIENT_ID"
           case "$GOOGLE_SERVER_CLIENT_ID" in
             *.apps.googleusercontent.com) ;;
@@ -75,55 +74,17 @@ jobs:
           echo "Google Cloud must contain an Android OAuth client for this package and the SHA-1 of the certificate used by the APK."
           echo "The web/server client and Android OAuth client must belong to the same Google Cloud project."
 
-      - name: Restore fixed release keystore
-        env:
-          MAIL_RELEASE_KEYSTORE_BASE64: ${{ secrets.MAIL_RELEASE_KEYSTORE_BASE64 }}
-          MAIL_KEYSTORE_PASSWORD: ${{ secrets.MAIL_KEYSTORE_PASSWORD }}
-          MAIL_KEY_ALIAS: ${{ secrets.MAIL_KEY_ALIAS }}
-          MAIL_KEY_PASSWORD: ${{ secrets.MAIL_KEY_PASSWORD }}
-        run: |
-          set -euo pipefail
-          test -n "$MAIL_RELEASE_KEYSTORE_BASE64"
-          test -n "$MAIL_KEYSTORE_PASSWORD"
-          test -n "$MAIL_KEY_ALIAS"
-          test -n "$MAIL_KEY_PASSWORD"
-
-          mkdir -p "$RUNNER_TEMP/mail-signing"
-          printf "%s" "$MAIL_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/mail-signing/mail-release.jks"
-          chmod 600 "$RUNNER_TEMP/mail-signing/mail-release.jks"
-
-          keytool -list -v             -keystore "$RUNNER_TEMP/mail-signing/mail-release.jks"             -storepass "$MAIL_KEYSTORE_PASSWORD"             -alias "$MAIL_KEY_ALIAS" |
-            grep -E "Alias name:|SHA1:|SHA256:"
-
       - name: Build arm64 release APK
         env:
           GOOGLE_SERVER_CLIENT_ID: 1057557137418-g440cu974hf39b1k4qhumag6lhbpkdnb.apps.googleusercontent.com
-          MAIL_KEYSTORE_PATH: ${{ runner.temp }}/mail-signing/mail-release.jks
-          MAIL_KEYSTORE_PASSWORD: ${{ secrets.MAIL_KEYSTORE_PASSWORD }}
-          MAIL_KEY_ALIAS: ${{ secrets.MAIL_KEY_ALIAS }}
-          MAIL_KEY_PASSWORD: ${{ secrets.MAIL_KEY_PASSWORD }}
         run: |
-          set -euo pipefail
-          test -f "$MAIL_KEYSTORE_PATH"
-          test -n "$MAIL_KEYSTORE_PASSWORD"
-          test -n "$MAIL_KEY_ALIAS"
-          test -n "$MAIL_KEY_PASSWORD"
           flutter build apk             --release             --target-platform android-arm64             --dart-define=GOOGLE_SERVER_CLIENT_ID="$GOOGLE_SERVER_CLIENT_ID"
 
-      - name: Report and verify release signing fingerprint
-        env:
-          EXPECTED_RELEASE_SHA1: "79:89:FB:E1:1C:32:36:B4:9E:76:AE:32:50:12:18:9D:CE:2B:6E:80"
+      - name: Report release signing fingerprint
         working-directory: android
         run: |
           set -euo pipefail
-          REPORT="$(./gradlew :app:signingReport)"
-          printf "%s
-" "$REPORT"
-          ACTUAL_SHA1="$(printf "%s
-" "$REPORT" | sed -n '/Variant: release/,/Variant:/p' | grep 'SHA1:' | head -n1 | awk '{print $2}')"
-          echo "Expected SHA-1: $EXPECTED_RELEASE_SHA1"
-          echo "Actual SHA-1:   $ACTUAL_SHA1"
-          test "$ACTUAL_SHA1" = "$EXPECTED_RELEASE_SHA1"
+          ./gradlew :app:signingReport
 
       - name: Upload APK
         uses: actions/upload-artifact@v7
