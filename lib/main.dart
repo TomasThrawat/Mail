@@ -4,18 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'app_logger.dart';
 import 'gmail_service.dart';
 import 'models.dart';
 
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  await AppLogger.instance.initialize();
-  await AppLogger.instance.log(
-    'app.start',
-    fields: <String, Object?>{'entrypoint': 'main'},
-  );
-  runApp(const MailApp());
+    runApp(const MailApp());
 }
 
 class MailApp extends StatefulWidget {
@@ -170,27 +164,18 @@ class _MailPageState extends State<MailPage> {
   }
 
   Future<void> _restore() async {
-    await AppLogger.instance.log('ui.restore.start');
-    try {
+        try {
       final MailAccount? restored = await widget.gmail.restoreAccount();
       if (restored != null && mounted) {
-        await AppLogger.instance.log(
-          'ui.restore.success',
-          fields: <String, Object?>{
-            'email': AppLogger.maskEmail(restored.email),
-          },
-        );
-        setState(() {
+                setState(() {
           account = restored;
           _upsertAccount(restored);
         });
         await _refresh();
       } else {
-        await AppLogger.instance.log('ui.restore.no_account');
-      }
-    } catch (error, stackTrace) {
-      await AppLogger.instance.error('ui.restore.error', error, stackTrace);
-      _showError(_localError(error));
+              }
+    } catch (error) {
+            _showError(_localError(error));
     } finally {
       if (mounted) {
         setState(() => loading = false);
@@ -214,29 +199,20 @@ class _MailPageState extends State<MailPage> {
       return;
     }
 
-    await AppLogger.instance.log(
-      'ui.add_account.start',
-      fields: <String, Object?>{'had_current_account': account != null},
-    );
-    setState(() => authenticating = true);
+        setState(() => authenticating = true);
     try {
       final MailAccount added = await widget.gmail.authenticateAccount();
       if (!mounted) {
         return;
       }
-      await AppLogger.instance.log(
-        'ui.add_account.success',
-        fields: <String, Object?>{'email': AppLogger.maskEmail(added.email)},
-      );
-      setState(() {
+            setState(() {
         _upsertAccount(added);
         account = added;
         messages = const <MailMessage>[];
       });
       await _refresh();
-    } catch (error, stackTrace) {
-      await AppLogger.instance.error('ui.add_account.error', error, stackTrace);
-      _showError(_localError(error));
+    } catch (error) {
+            _showError(_localError(error));
     } finally {
       if (mounted) {
         setState(() => authenticating = false);
@@ -342,11 +318,7 @@ class _MailPageState extends State<MailPage> {
   }
 
   String _localError(Object error) {
-    final String logSuffix =
-        AppLogger.instance.logPath == null
-            ? ''
-            : ' Log: $AppLogger.instance.logPath!';
-    if (error is GoogleSignInException) {
+if (error is GoogleSignInException) {
       final String description = error.description ?? error.code.name;
       return tr(
         'Google sign-in failed: $description.$logSuffix',

@@ -5,7 +5,6 @@ import 'package:googleapis/gmail/v1.dart';
 import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 
 import 'models.dart';
-import 'app_logger.dart';
 
 class GmailService {
   bool _isAuthorizationMissing(
@@ -30,99 +29,58 @@ class GmailService {
   final Map<String, GoogleSignInAccount> _users =
       <String, GoogleSignInAccount>{};
   bool _initialized = false;
-  final AppLogger _logger = AppLogger.instance;
 
   Future<void> initialize() async {
     if (_initialized) {
-      await _logger.log('google.initialize.skip');
-      return;
+            return;
     }
-    await _logger.log(
-      'google.initialize.start',
-      fields: <String, Object?>{
-        'server_client_id': _serverClientId,
-        'scopes': scopes,
-      },
-    );
-    try {
+        try {
       await signIn.initialize(
         serverClientId: _serverClientId.isEmpty ? null : _serverClientId,
       );
       _initialized = true;
-      await _logger.log('google.initialize.success');
-    } catch (error, stackTrace) {
-      await _logger.error('google.initialize.error', error, stackTrace);
-      rethrow;
+          } catch (error) {
+            rethrow;
     }
   }
 
   Future<MailAccount?> restoreAccount() async {
-    await _logger.log('google.restore.start');
-    try {
+        try {
       await initialize();
       final Future<GoogleSignInAccount?>? attempt =
           signIn.attemptLightweightAuthentication();
       if (attempt == null) {
-        await _logger.log('google.restore.lightweight_unavailable');
-        return null;
+                return null;
       }
 
       final GoogleSignInAccount? user = await attempt;
       if (user == null) {
-        await _logger.log('google.restore.no_account');
-        return null;
+                return null;
       }
 
-      await _logger.log(
-        'google.restore.account_found',
-        fields: <String, Object?>{'email': AppLogger.maskEmail(user.email)},
-      );
-      return await _authorize(user, promptIfNeeded: false);
-    } catch (error, stackTrace) {
-      await _logger.error('google.restore.error', error, stackTrace);
-      rethrow;
+            return await _authorize(user, promptIfNeeded: false);
+    } catch (error) {
+            rethrow;
     }
   }
 
   Future<MailAccount> authenticateAccount() async {
-    await _logger.log('google.authenticate.start');
-    try {
+        try {
       await initialize();
       final bool supported = signIn.supportsAuthenticate();
-      await _logger.log(
-        'google.authenticate.capability',
-        fields: <String, Object?>{'supports_authenticate': supported},
-      );
-      if (!supported) {
+            if (!supported) {
         throw StateError('Google Sign-In authentication is unavailable.');
       }
 
-      await _logger.log('google.authenticate.disconnect.start');
-      await signIn.disconnect();
-      await _logger.log('google.authenticate.disconnect.success');
-
-      await _logger.log('google.authenticate.interactive.start');
-      final GoogleSignInAccount user = await signIn.authenticate();
-      await _logger.log(
-        'google.authenticate.interactive.success',
-        fields: <String, Object?>{
-          'email': AppLogger.maskEmail(user.email),
-          'display_name_present': user.displayName?.isNotEmpty == true,
-        },
-      );
-
-      final MailAccount? account = await _authorize(user, promptIfNeeded: true);
+            await signIn.disconnect();
+                  final GoogleSignInAccount user = await signIn.authenticate();
+            final MailAccount? account = await _authorize(user, promptIfNeeded: true);
       if (account == null) {
         throw StateError('Gmail authorization was not granted.');
       }
-      await _logger.log(
-        'google.authenticate.complete',
-        fields: <String, Object?>{'email': AppLogger.maskEmail(account.email)},
-      );
-      return account;
-    } catch (error, stackTrace) {
-      await _logger.error('google.authenticate.error', error, stackTrace);
-      rethrow;
+            return account;
+    } catch (error) {
+            rethrow;
     }
   }
 
@@ -130,15 +88,7 @@ class GmailService {
     GoogleSignInAccount user, {
     required bool promptIfNeeded,
   }) async {
-    await _logger.log(
-      'google.authorization.start',
-      fields: <String, Object?>{
-        'email': AppLogger.maskEmail(user.email),
-        'prompt_if_needed': promptIfNeeded,
-        'scopes': scopes,
-      },
-    );
-    try {
+        try {
       final Object? existingAuthorizationResult = await user.authorizationClient
           .authorizationForScopes(scopes);
       final GoogleSignInClientAuthorization? existingAuthorization =
@@ -147,26 +97,11 @@ class GmailService {
               : null;
       GoogleSignInClientAuthorization? authorization = existingAuthorization;
 
-      await _logger.log(
-        'google.authorization.existing_result',
-        fields: <String, Object?>{
-          'available': !_isAuthorizationMissing(authorization),
-        },
-      );
-
-      if (_isAuthorizationMissing(authorization) && promptIfNeeded) {
-        await _logger.log('google.authorization.prompt.start');
-        authorization = await user.authorizationClient.authorizeScopes(scopes);
-        await _logger.log(
-          'google.authorization.prompt.result',
-          fields: <String, Object?>{
-            'available': !_isAuthorizationMissing(authorization),
-          },
-        );
-      }
+            if (_isAuthorizationMissing(authorization) && promptIfNeeded) {
+                authorization = await user.authorizationClient.authorizeScopes(scopes);
+              }
       if (_isAuthorizationMissing(authorization)) {
-        await _logger.log('google.authorization.not_granted');
-        return null;
+                return null;
       }
 
       final GoogleSignInClientAuthorization grantedAuthorization =
@@ -176,28 +111,18 @@ class GmailService {
       );
       _users[user.email] = user;
 
-      await _logger.log(
-        'google.authorization.success',
-        fields: <String, Object?>{'email': AppLogger.maskEmail(user.email)},
-      );
-
-      return MailAccount(
+            return MailAccount(
         email: user.email,
         displayName: user.displayName,
         photoUrl: user.photoUrl,
       );
-    } catch (error, stackTrace) {
-      await _logger.error('google.authorization.error', error, stackTrace);
-      rethrow;
+    } catch (error) {
+            rethrow;
     }
   }
 
   Future<void> refreshAuthorization(String email) async {
-    await _logger.log(
-      'google.refresh_authorization.start',
-      fields: <String, Object?>{'email': AppLogger.maskEmail(email)},
-    );
-    try {
+        try {
       final GoogleSignInAccount? user = _users[email];
       if (user == null) {
         throw StateError('The selected Google account is not available.');
@@ -206,15 +131,8 @@ class GmailService {
       if (account == null) {
         throw StateError('Gmail authorization was not granted.');
       }
-      await _logger.log('google.refresh_authorization.success');
-    } catch (error, stackTrace) {
-      await _logger.error(
-        'google.refresh_authorization.error',
-        error,
-        stackTrace,
-        fields: <String, Object?>{'email': AppLogger.maskEmail(email)},
-      );
-      rethrow;
+          } catch (error) {
+            rethrow;
     }
   }
 
@@ -293,36 +211,22 @@ class GmailService {
   }
 
   Future<void> signOutCurrent() async {
-    await _logger.log('google.signout.start');
-    try {
+        try {
       await signIn.disconnect();
       _apis.clear();
       _users.clear();
-      await _logger.log('google.signout.success');
-    } catch (error, stackTrace) {
-      await _logger.error('google.signout.error', error, stackTrace);
-      rethrow;
+          } catch (error) {
+            rethrow;
     }
   }
 
   Future<void> _ensureAuthorized(String email) async {
-    await _logger.log(
-      'gmail.ensure_authorized.start',
-      fields: <String, Object?>{'email': AppLogger.maskEmail(email)},
-    );
-    if (_apis.containsKey(email)) {
+        if (_apis.containsKey(email)) {
       try {
         await _requireApi(email).users.getProfile('me');
-        await _logger.log('gmail.ensure_authorized.cached_success');
-        return;
-      } catch (error, stackTrace) {
-        await _logger.error(
-          'gmail.ensure_authorized.cached_failed',
-          error,
-          stackTrace,
-          fields: <String, Object?>{'email': AppLogger.maskEmail(email)},
-        );
-        _apis.remove(email);
+                return;
+      } catch (error) {
+                _apis.remove(email);
       }
     }
 
