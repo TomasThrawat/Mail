@@ -63,7 +63,7 @@ jobs:
               ;;
           esac
 
-          APPLICATION_ID="$(sed -nE 's/^[[:space:]]*applicationId[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' android/app/build.gradle.kts | head -n1)"
+          APPLICATION_ID="$(sed -nE 's/^[[:space:]]*applicationId[[:space:]]*=[[:space:]]*"([^"]+)".*/\\1/p' android/app/build.gradle.kts | head -n1)"
           if [ "$APPLICATION_ID" != "com.hyouka.mail" ]; then
             echo "ERROR: unexpected Android applicationId: $APPLICATION_ID"
             exit 1
@@ -71,20 +71,89 @@ jobs:
 
           echo "Android applicationId: $APPLICATION_ID"
           echo "Web/server client ID: $GOOGLE_SERVER_CLIENT_ID"
-          echo "Google Cloud must contain an Android OAuth client for this package and the SHA-1 of the certificate used by the APK."
-          echo "The web/server client and Android OAuth client must belong to the same Google Cloud project."
+          echo "Google OAuth Android client is configured with the stable release certificate SHA-1."
+
+      - name: Validate release signing key
+        env:
+          MAIL_RELEASE_KEYSTORE_BASE64: \${{ secrets.MAIL_RELEASE_KEYSTORE_BASE64 }}
+          MAIL_KEYSTORE_PASSWORD: \${{ secrets.MAIL_KEYSTORE_PASSWORD }}
+          MAIL_KEY_ALIAS: \${{ secrets.MAIL_KEY_ALIAS }}
+          MAIL_KEY_PASSWORD: \${{ secrets.MAIL_KEY_PASSWORD }}
+          MAIL_KEYSTORE_PATH: \${{ runner.temp }}/mail-release.jks
+        run: |
+          set -euo pipefail
+          test -n "$MAIL_RELEASE_KEYSTORE_BASE64"
+          test -n "$MAIL_KEYSTORE_PASSWORD"
+          test -n "$MAIL_KEY_ALIAS"
+          test -n "$MAIL_KEY_PASSWORD"
+
+          printf '%s' "$MAIL_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$MAIL_KEYSTORE_PATH"
+          test -s "$MAIL_KEYSTORE_PATH"
+
+          EXPECTED_SHA1="79:89:FB:E1:1C:32:36:B4:9E:76:AE:32:50:12:18:9D:CE:2B:6E:80"
+          ACTUAL_SHA1="$(
+            keytool -list -v \
+              -keystore "$MAIL_KEYSTORE_PATH" \
+              -storepass "$MAIL_KEYSTORE_PASSWORD" \
+              -alias "$MAIL_KEY_ALIAS" \
+              -keypass "$MAIL_KEY_PASSWORD" |
+            sed -nE 's/^[[:space:]]*SHA1:[[:space:]]*//p' |
+            head -n1
+          )"
+
+          if [ "$ACTUAL_SHA1" != "$EXPECTED_SHA1" ]; then
+            echo "ERROR: release keystore SHA-1 does not match the registered Google OAuth certificate."
+            echo "Expected: $EXPECTED_SHA1"
+            echo "Actual:   $ACTUAL_SHA1"
+            exit 1
+          fi
+
+          echo "Release keystore SHA-1 verified: $ACTUAL_SHA1"
 
       - name: Build arm64 release APK
         env:
           GOOGLE_SERVER_CLIENT_ID: 1057557137418-g440cu974hf39b1k4qhumag6lhbpkdnb.apps.googleusercontent.com
-        run: |
-          flutter build apk             --release             --target-platform android-arm64             --dart-define=GOOGLE_SERVER_CLIENT_ID="$GOOGLE_SERVER_CLIENT_ID"
-
-      - name: Report release signing fingerprint
-        working-directory: android
+          MAIL_RELEASE_KEYSTORE_BASE64: \${{ secrets.MAIL_RELEASE_KEYSTORE_BASE64 }}
+          MAIL_KEYSTORE_PASSWORD: \${{ secrets.MAIL_KEYSTORE_PASSWORD }}
+          MAIL_KEY_ALIAS: \${{ secrets.MAIL_KEY_ALIAS }}
+          MAIL_KEY_PASSWORD: \${{ secrets.MAIL_KEY_PASSWORD }}
+          MAIL_KEYSTORE_PATH: \${{ runner.temp }}/mail-release.jks
         run: |
           set -euo pipefail
-          ./gradlew :app:signingReport
+          printf '%s' "$MAIL_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$MAIL_KEYSTORE_PATH"
+          test -s "$MAIL_KEYSTORE_PATH"
+
+          flutter build apk \
+            --release \
+            --target-platform android-arm64 \
+            --dart-define=GOOGLE_SERVER_CLIENT_ID="$GOOGLE_SERVER_CLIENT_ID"
+
+      - name: Verify APK signing certificate
+        run: |
+          set -euo pipefail
+          APK="build/app/outputs/flutter-apk/app-release.apk"
+          test -s "$APK"
+
+          BUILD_TOOLS_VERSION="$(ls -1 "$ANDROID_HOME/build-tools" | sort -V | tail -n1)"
+          APKSIGNER="$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/apksigner"
+          test -x "$APKSIGNER"
+
+          CERT_SHA1="$(
+            "$APKSIGNER" verify --print-certs "$APK" 2>&1 |
+            sed -nE 's/^Signer #1 certificate SHA-1 digest: //p' |
+            head -n1
+          )"
+          EXPECTED_SHA1="7989FBE11C3236B49E76AE325012189DCE2B6E80"
+
+          if [ "$CERT_SHA1" != "$EXPECTED_SHA1" ]; then
+            echo "ERROR: APK signing SHA-1 does not match the registered Google OAuth certificate."
+            echo "Expected: $EXPECTED_SHA1"
+            echo "Actual:   $CERT_SHA1"
+            exit 1
+          fi
+
+          echo "APK signing SHA-1 verified: $CERT_SHA1"
+          "$APKSIGNER" verify --verbose "$APK"
 
       - name: Upload APK
         uses: actions/upload-artifact@v7
