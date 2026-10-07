@@ -32,55 +32,55 @@ class GmailService {
 
   Future<void> initialize() async {
     if (_initialized) {
-            return;
+      return;
     }
-        try {
+    try {
       await signIn.initialize(
         serverClientId: _serverClientId.isEmpty ? null : _serverClientId,
       );
       _initialized = true;
-          } catch (error) {
-            rethrow;
+    } catch (error) {
+      rethrow;
     }
   }
 
   Future<MailAccount?> restoreAccount() async {
-        try {
+    try {
       await initialize();
       final Future<GoogleSignInAccount?>? attempt =
           signIn.attemptLightweightAuthentication();
       if (attempt == null) {
-                return null;
+        return null;
       }
 
       final GoogleSignInAccount? user = await attempt;
       if (user == null) {
-                return null;
+        return null;
       }
 
-            return await _authorize(user, promptIfNeeded: false);
+      return await _authorize(user, promptIfNeeded: false);
     } catch (error) {
-            rethrow;
+      rethrow;
     }
   }
 
   Future<MailAccount> authenticateAccount() async {
-        try {
+    try {
       await initialize();
       final bool supported = signIn.supportsAuthenticate();
-            if (!supported) {
+      if (!supported) {
         throw StateError('Google Sign-In authentication is unavailable.');
       }
 
-            await signIn.disconnect();
-                  final GoogleSignInAccount user = await signIn.authenticate();
-            final MailAccount? account = await _authorize(user, promptIfNeeded: true);
+      await signIn.disconnect();
+      final GoogleSignInAccount user = await signIn.authenticate();
+      final MailAccount? account = await _authorize(user, promptIfNeeded: true);
       if (account == null) {
         throw StateError('Gmail authorization was not granted.');
       }
-            return account;
+      return account;
     } catch (error) {
-            rethrow;
+      rethrow;
     }
   }
 
@@ -88,7 +88,7 @@ class GmailService {
     GoogleSignInAccount user, {
     required bool promptIfNeeded,
   }) async {
-        try {
+    try {
       final Object? existingAuthorizationResult = await user.authorizationClient
           .authorizationForScopes(scopes);
       final GoogleSignInClientAuthorization? existingAuthorization =
@@ -97,11 +97,11 @@ class GmailService {
               : null;
       GoogleSignInClientAuthorization? authorization = existingAuthorization;
 
-            if (_isAuthorizationMissing(authorization) && promptIfNeeded) {
-                authorization = await user.authorizationClient.authorizeScopes(scopes);
-              }
+      if (_isAuthorizationMissing(authorization) && promptIfNeeded) {
+        authorization = await user.authorizationClient.authorizeScopes(scopes);
+      }
       if (_isAuthorizationMissing(authorization)) {
-                return null;
+        return null;
       }
 
       final GoogleSignInClientAuthorization grantedAuthorization =
@@ -111,18 +111,18 @@ class GmailService {
       );
       _users[user.email] = user;
 
-            return MailAccount(
+      return MailAccount(
         email: user.email,
         displayName: user.displayName,
         photoUrl: user.photoUrl,
       );
     } catch (error) {
-            rethrow;
+      rethrow;
     }
   }
 
   Future<void> refreshAuthorization(String email) async {
-        try {
+    try {
       final GoogleSignInAccount? user = _users[email];
       if (user == null) {
         throw StateError('The selected Google account is not available.');
@@ -131,8 +131,8 @@ class GmailService {
       if (account == null) {
         throw StateError('Gmail authorization was not granted.');
       }
-          } catch (error) {
-            rethrow;
+    } catch (error) {
+      rethrow;
     }
   }
 
@@ -211,22 +211,22 @@ class GmailService {
   }
 
   Future<void> signOutCurrent() async {
-        try {
+    try {
       await signIn.disconnect();
       _apis.clear();
       _users.clear();
-          } catch (error) {
-            rethrow;
+    } catch (error) {
+      rethrow;
     }
   }
 
   Future<void> _ensureAuthorized(String email) async {
-        if (_apis.containsKey(email)) {
+    if (_apis.containsKey(email)) {
       try {
         await _requireApi(email).users.getProfile('me');
-                return;
+        return;
       } catch (error) {
-                _apis.remove(email);
+        _apis.remove(email);
       }
     }
 

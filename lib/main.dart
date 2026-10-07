@@ -9,7 +9,7 @@ import 'models.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-    runApp(const MailApp());
+  runApp(const MailApp());
 }
 
 class MailApp extends StatefulWidget {
@@ -164,18 +164,17 @@ class _MailPageState extends State<MailPage> {
   }
 
   Future<void> _restore() async {
-        try {
+    try {
       final MailAccount? restored = await widget.gmail.restoreAccount();
       if (restored != null && mounted) {
-                setState(() {
+        setState(() {
           account = restored;
           _upsertAccount(restored);
         });
         await _refresh();
-      } else {
-              }
+      } else {}
     } catch (error) {
-            _showError(_localError(error));
+      _showError(_localError(error));
     } finally {
       if (mounted) {
         setState(() => loading = false);
@@ -199,20 +198,20 @@ class _MailPageState extends State<MailPage> {
       return;
     }
 
-        setState(() => authenticating = true);
+    setState(() => authenticating = true);
     try {
       final MailAccount added = await widget.gmail.authenticateAccount();
       if (!mounted) {
         return;
       }
-            setState(() {
+      setState(() {
         _upsertAccount(added);
         account = added;
         messages = const <MailMessage>[];
       });
       await _refresh();
     } catch (error) {
-            _showError(_localError(error));
+      _showError(_localError(error));
     } finally {
       if (mounted) {
         setState(() => authenticating = false);
