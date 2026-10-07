@@ -286,8 +286,8 @@ class GmailService {
       // Avoid hundreds of concurrent single-message delete calls. Gmail
       // exposes batchDelete specifically for deleting many message IDs.
       await api.users.messages.batchDelete(
-        'me',
         BatchDeleteMessagesRequest()..ids = ids,
+        'me',
       );
     }
   }
