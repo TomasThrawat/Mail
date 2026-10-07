@@ -51,7 +51,7 @@ jobs:
 
       - name: Validate Google OAuth configuration
         env:
-          GOOGLE_SERVER_CLIENT_ID: 1057557137418-g440cu974hf39b1k4qhumag6lhbpkdnb.apps.googleusercontent.com
+          GOOGLE_SERVER_CLIENT_ID: 1057557137418-shkm3tmihedijreur8u8lvf3d84tnpmo.apps.googleusercontent.com
         run: |
           set -euo pipefail
           test -n "$GOOGLE_SERVER_CLIENT_ID"
@@ -112,7 +112,7 @@ jobs:
 
       - name: Build arm64 release APK
         env:
-          GOOGLE_SERVER_CLIENT_ID: 1057557137418-g440cu974hf39b1k4qhumag6lhbpkdnb.apps.googleusercontent.com
+          GOOGLE_SERVER_CLIENT_ID: 1057557137418-shkm3tmihedijreur8u8lvf3d84tnpmo.apps.googleusercontent.com
           MAIL_RELEASE_KEYSTORE_BASE64: ${{ secrets.MAIL_RELEASE_KEYSTORE_BASE64 }}
           MAIL_KEYSTORE_PASSWORD: ${{ secrets.MAIL_KEYSTORE_PASSWORD }}
           MAIL_KEY_ALIAS: ${{ secrets.MAIL_KEY_ALIAS }}
