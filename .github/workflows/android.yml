@@ -47,16 +47,12 @@ jobs:
 
       - name: Validate Google OAuth configuration
         env:
-          GOOGLE_SERVER_CLIENT_ID: ${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
+          GOOGLE_SERVER_CLIENT_ID: 1057557137418-g440cu974hf39b1k4qhumag6lhbpkdnb.apps.googleusercontent.com
         run: |
-          if [ -z "$GOOGLE_SERVER_CLIENT_ID" ]; then
-            echo "::error::Missing GitHub secret GOOGLE_SERVER_CLIENT_ID (the Web OAuth 2.0 client ID ending in .apps.googleusercontent.com)."
-            exit 1
-          fi
 
       - name: Build arm64 release APK
         env:
-          GOOGLE_SERVER_CLIENT_ID: ${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
+          GOOGLE_SERVER_CLIENT_ID: 1057557137418-g440cu974hf39b1k4qhumag6lhbpkdnb.apps.googleusercontent.com
         run: |
           flutter build apk             --release             --target-platform android-arm64             --dart-define=GOOGLE_SERVER_CLIENT_ID="$GOOGLE_SERVER_CLIENT_ID"
 
