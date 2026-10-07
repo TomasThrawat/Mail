@@ -674,20 +674,18 @@ class SettingsPage extends StatelessWidget {
           ),
           RadioGroup<bool>(
             groupValue: pureBlack,
-            onChanged: (bool? value) {
-              if (value != null) {
-                onTheme(value);
-              }
-            },
+            onChanged: onTheme,
             child: Column(
               children: <Widget>[
-                RadioListTile<bool>(
-                  value: true,
+                ListTile(
+                  leading: const Radio<bool>(value: true),
                   title: Text(tr('Pure Black', 'أسود نقي')),
+                  onTap: () => onTheme(true),
                 ),
-                RadioListTile<bool>(
-                  value: false,
+                ListTile(
+                  leading: const Radio<bool>(value: false),
                   title: Text(tr('White', 'أبيض')),
+                  onTap: () => onTheme(false),
                 ),
               ],
             ),
@@ -712,13 +710,15 @@ class SettingsPage extends StatelessWidget {
             },
             child: Column(
               children: <Widget>[
-                RadioListTile<String>(
-                  value: 'ar',
+                ListTile(
+                  leading: const Radio<String>(value: 'ar'),
                   title: const Text('العربية'),
+                  onTap: () => onLanguage(const Locale('ar')),
                 ),
-                RadioListTile<String>(
-                  value: 'en',
+                ListTile(
+                  leading: const Radio<String>(value: 'en'),
                   title: const Text('English'),
+                  onTap: () => onLanguage(const Locale('en')),
                 ),
               ],
             ),
