@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/gmail/v1.dart';
 
@@ -178,7 +177,10 @@ class GmailService {
         return null;
       }
 
-      _apis[user.email] = GmailApi(authorization.authClient(scopes: scopes));
+      final GoogleSignInClientAuthorization grantedAuthorization = authorization!;
+      _apis[user.email] = GmailApi(
+        grantedAuthorization.authClient(scopes: scopes),
+      );
       _users[user.email] = user;
 
       await _logger.log(
