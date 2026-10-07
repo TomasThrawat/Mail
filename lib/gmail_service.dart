@@ -72,7 +72,11 @@ class GmailService {
         throw StateError('Google Sign-In authentication is unavailable.');
       }
 
-      await signIn.disconnect();
+      // google_sign_in recommends signing out before starting a new
+      // interactive authentication flow. Disconnect would revoke the app's
+      // Google authorization and can make the add-account flow appear to do
+      // nothing on Android.
+      await signIn.signOut();
       final GoogleSignInAccount user = await signIn.authenticate();
       final MailAccount? account = await _authorize(user, promptIfNeeded: true);
       if (account == null) {
