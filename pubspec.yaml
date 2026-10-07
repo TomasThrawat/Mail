@@ -1,20 +1,18 @@
 name: mail
-description: A real Flutter email client with server-synchronized Gmail accounts.
+description: A native Flutter Android email client with server-synchronized Gmail accounts.
 publish_to: 'none'
 version: 0.1.0+1
 
 environment:
-  sdk: '>=3.6.0 <4.0.0'
+  sdk: '>=3.7.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.8
   google_sign_in: ^7.2.0
   extension_google_sign_in_as_googleapis_auth: ^3.0.0
   googleapis: ^17.0.0
   shared_preferences: ^2.5.3
-  flutter_local_notifications: ^19.4.2
 
 dev_dependencies:
   flutter_test:
