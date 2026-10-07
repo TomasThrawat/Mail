@@ -23,7 +23,7 @@ class GmailService {
   static const String _serverClientId = String.fromEnvironment(
     'GOOGLE_SERVER_CLIENT_ID',
     defaultValue:
-        '1057557137418-g440cu974hf39b1k4qhumag6lhbpkdnb.apps.googleusercontent.com',
+        '1057557137418-shkm3tmihedijreur8u8lvf3d84tnpmo.apps.googleusercontent.com',
   );
 
   final Map<String, GmailApi> _apis = <String, GmailApi>{};
