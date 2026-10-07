@@ -142,9 +142,13 @@ class GmailService {
       },
     );
     try {
-      final GoogleSignInClientAuthorization? existingAuthorization = await user
+      final Object? existingAuthorizationResult = await user
           .authorizationClient
           .authorizationForScopes(scopes);
+      final GoogleSignInClientAuthorization? existingAuthorization =
+          existingAuthorizationResult is GoogleSignInClientAuthorization
+              ? existingAuthorizationResult
+              : null;
       GoogleSignInClientAuthorization? authorization = existingAuthorization;
 
       await _logger.log(

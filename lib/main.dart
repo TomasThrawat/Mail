@@ -349,12 +349,12 @@ class _MailPageState extends State<MailPage> {
     final String logSuffix =
         AppLogger.instance.logPath == null
             ? ''
-            : ' Log: ${AppLogger.instance.logPath!}';
+            : ' Log: $AppLogger.instance.logPath!';
     if (error is GoogleSignInException) {
       final String description = error.description ?? error.code.name;
       return tr(
-        'Google sign-in failed: ${description}.${logSuffix}',
-        'فشل تسجيل الدخول إلى Google: ${description}.${logSuffix}',
+        'Google sign-in failed: $description.$logSuffix',
+        'فشل تسجيل الدخول إلى Google: $description.$logSuffix',
       );
     }
     return error.toString().replaceFirst('Bad state: ', '') + logSuffix;
