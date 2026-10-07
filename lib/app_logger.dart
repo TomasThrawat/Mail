@@ -65,7 +65,7 @@ class AppLogger {
     final Future<void> next = _writeQueue.then((_) async {
       try {
         await _channel.invokeMethod<void>('writeLog', <String, Object?>{
-          'line': ${line}\n',
+          'line': '${line}\n',
         });
       } catch (error, stackTrace) {
         developer.log(
