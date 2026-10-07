@@ -318,14 +318,14 @@ class _MailPageState extends State<MailPage> {
   }
 
   String _localError(Object error) {
-if (error is GoogleSignInException) {
+    if (error is GoogleSignInException) {
       final String description = error.description ?? error.code.name;
       return tr(
-        'Google sign-in failed: $description.$logSuffix',
-        'فشل تسجيل الدخول إلى Google: $description.$logSuffix',
+        'Google sign-in failed: $description.',
+        'فشل تسجيل الدخول إلى Google: $description.',
       );
     }
-    return error.toString().replaceFirst('Bad state: ', '') + logSuffix;
+    return error.toString().replaceFirst('Bad state: ', '');
   }
 
   void _showError(String message) {
