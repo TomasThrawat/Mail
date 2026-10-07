@@ -75,7 +75,7 @@ class GmailService {
           'email': AppLogger.maskEmail(user.email),
         },
       );
-      return _authorize(user, promptIfNeeded: false);
+      return await _authorize(user, promptIfNeeded: false);
     } catch (error, stackTrace) {
       await _logger.error('google.restore.error', error, stackTrace);
       rethrow;
@@ -142,9 +142,10 @@ class GmailService {
       },
     );
     try {
-      GoogleSignInClientAuthorization? authorization = await user
+      final GoogleSignInClientAuthorization? existingAuthorization = await user
           .authorizationClient
           .authorizationForScopes(scopes);
+      GoogleSignInClientAuthorization? authorization = existingAuthorization;
 
       await _logger.log(
         'google.authorization.existing_result',
