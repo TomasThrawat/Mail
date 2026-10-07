@@ -25,8 +25,8 @@ class AppLogger {
     _initialized = true;
 
     try {
-      final Map<Object?, Object?>? result =
-          await _channel.invokeMethod<Map<Object?, Object?>>('initialize');
+      final Map<Object?, Object?>? result = await _channel
+          .invokeMethod<Map<Object?, Object?>>('initialize');
       _logPath = result?['logPath']?.toString();
       await log(
         'native_diagnostics',
@@ -94,19 +94,19 @@ class AppLogger {
       'error_type': errorObject.runtimeType.toString(),
       'error': message,
       'stack_trace': _sanitizeText(stackTrace.toString()),
-      if (numericStatus != null) 'numeric_status_code': int.tryParse(numericStatus),
+      if (numericStatus != null)
+        'numeric_status_code': int.tryParse(numericStatus),
       if (numericStatus == '16')
-        'status_code_meaning': 'CommonStatusCodes.CANCELED / cancel-like result',
+        'status_code_meaning':
+            'CommonStatusCodes.CANCELED / cancel-like result',
     };
     return log(event, level: 'ERROR', fields: merged);
   }
 
   Map<String, Object?> _sanitizeMap(Map<String, Object?> input) {
     return input.map(
-      (String key, Object? value) => MapEntry(
-        key,
-        value is String ? _sanitizeText(value) : value,
-      ),
+      (String key, Object? value) =>
+          MapEntry(key, value is String ? _sanitizeText(value) : value),
     );
   }
 
@@ -114,7 +114,10 @@ class AppLogger {
     String sanitized = value;
     final List<RegExp> patterns = <RegExp>[
       RegExp(r'Bearer\s+[^\s,]+', caseSensitive: false),
-      RegExp(r'(access_token|refresh_token|id_token|authorization|authcode|serverAuthCode)\s*[:=]\s*[^\s,]+', caseSensitive: false),
+      RegExp(
+        r'(access_token|refresh_token|id_token|authorization|authcode|serverAuthCode)\s*[:=]\s*[^\s,]+',
+        caseSensitive: false,
+      ),
       RegExp(r'ya29\.[A-Za-z0-9._-]+'),
       RegExp(r'1//[A-Za-z0-9._-]+'),
     ];

@@ -216,9 +216,7 @@ class _MailPageState extends State<MailPage> {
 
     await AppLogger.instance.log(
       'ui.add_account.start',
-      fields: <String, Object?>{
-        'had_current_account': account != null,
-      },
+      fields: <String, Object?>{'had_current_account': account != null},
     );
     setState(() => authenticating = true);
     try {
@@ -228,9 +226,7 @@ class _MailPageState extends State<MailPage> {
       }
       await AppLogger.instance.log(
         'ui.add_account.success',
-        fields: <String, Object?>{
-          'email': AppLogger.maskEmail(added.email),
-        },
+        fields: <String, Object?>{'email': AppLogger.maskEmail(added.email)},
       );
       setState(() {
         _upsertAccount(added);

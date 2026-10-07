@@ -10,8 +10,7 @@ import 'app_logger.dart';
 class GmailService {
   bool _isAuthorizationMissing(
     GoogleSignInClientAuthorization? authorization,
-  ) =>
-      authorization == null;
+  ) => authorization == null;
 
   GmailService(this.signIn);
 
@@ -76,9 +75,7 @@ class GmailService {
 
       await _logger.log(
         'google.restore.account_found',
-        fields: <String, Object?>{
-          'email': AppLogger.maskEmail(user.email),
-        },
+        fields: <String, Object?>{'email': AppLogger.maskEmail(user.email)},
       );
       return await _authorize(user, promptIfNeeded: false);
     } catch (error, stackTrace) {
@@ -114,18 +111,13 @@ class GmailService {
         },
       );
 
-      final MailAccount? account = await _authorize(
-        user,
-        promptIfNeeded: true,
-      );
+      final MailAccount? account = await _authorize(user, promptIfNeeded: true);
       if (account == null) {
         throw StateError('Gmail authorization was not granted.');
       }
       await _logger.log(
         'google.authenticate.complete',
-        fields: <String, Object?>{
-          'email': AppLogger.maskEmail(account.email),
-        },
+        fields: <String, Object?>{'email': AppLogger.maskEmail(account.email)},
       );
       return account;
     } catch (error, stackTrace) {
@@ -147,8 +139,7 @@ class GmailService {
       },
     );
     try {
-      final Object? existingAuthorizationResult = await user
-          .authorizationClient
+      final Object? existingAuthorizationResult = await user.authorizationClient
           .authorizationForScopes(scopes);
       final GoogleSignInClientAuthorization? existingAuthorization =
           existingAuthorizationResult is GoogleSignInClientAuthorization
@@ -178,7 +169,8 @@ class GmailService {
         return null;
       }
 
-      final GoogleSignInClientAuthorization grantedAuthorization = authorization!;
+      final GoogleSignInClientAuthorization grantedAuthorization =
+          authorization!;
       _apis[user.email] = GmailApi(
         grantedAuthorization.authClient(scopes: scopes),
       );
@@ -186,9 +178,7 @@ class GmailService {
 
       await _logger.log(
         'google.authorization.success',
-        fields: <String, Object?>{
-          'email': AppLogger.maskEmail(user.email),
-        },
+        fields: <String, Object?>{'email': AppLogger.maskEmail(user.email)},
       );
 
       return MailAccount(
@@ -212,10 +202,7 @@ class GmailService {
       if (user == null) {
         throw StateError('The selected Google account is not available.');
       }
-      final MailAccount? account = await _authorize(
-        user,
-        promptIfNeeded: true,
-      );
+      final MailAccount? account = await _authorize(user, promptIfNeeded: true);
       if (account == null) {
         throw StateError('Gmail authorization was not granted.');
       }
