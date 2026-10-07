@@ -8,6 +8,11 @@ import 'models.dart';
 import 'app_logger.dart';
 
 class GmailService {
+  bool _isAuthorizationMissing(
+    GoogleSignInClientAuthorization? authorization,
+  ) =>
+      authorization == null;
+
   GmailService(this.signIn);
 
   final GoogleSignIn signIn;
@@ -154,21 +159,21 @@ class GmailService {
       await _logger.log(
         'google.authorization.existing_result',
         fields: <String, Object?>{
-          'available': authorization != null,
+          'available': !_isAuthorizationMissing(authorization),
         },
       );
 
-      if (authorization == null && promptIfNeeded) {
+      if (_isAuthorizationMissing(authorization) && promptIfNeeded) {
         await _logger.log('google.authorization.prompt.start');
         authorization = await user.authorizationClient.authorizeScopes(scopes);
         await _logger.log(
           'google.authorization.prompt.result',
           fields: <String, Object?>{
-            'available': authorization != null,
+            'available': !_isAuthorizationMissing(authorization),
           },
         );
       }
-      if (authorization == null) {
+      if (_isAuthorizationMissing(authorization)) {
         await _logger.log('google.authorization.not_granted');
         return null;
       }
