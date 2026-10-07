@@ -143,12 +143,10 @@ jobs:
 
           CERT_SHA1="$(
             printf '%s\n' "$CERT_OUTPUT" |
-            awk 'tolower($0) ~ /certificate sha-1 digest:/ {
-              sub(/^.*certificate sha-1 digest:[[:space:]]*/, "")
-              gsub(/[[:space:]:]/, "")
-              print toupper($0)
-              exit
-            }'
+            sed -nE 's/^.*certificate SHA-1 digest:[[:space:]]*//p' |
+            head -n1 |
+            tr -d '[:space:]' |
+            tr '[:lower:]' '[:upper:]'
           )"
           EXPECTED_SHA1="7989FBE11C3236B49E76AE325012189DCE2B6E80"
 
