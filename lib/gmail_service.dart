@@ -172,16 +172,8 @@ class GmailService {
     }
   }
 
-  Future<List<MailMessage>> loadInbox(
-    String email, {
-    int maxResults = 50,
-  }) {
-    return _enqueue(
-      () => _loadInbox(
-        email,
-        maxResults: maxResults,
-      ),
-    );
+  Future<List<MailMessage>> loadInbox(String email, {int maxResults = 50}) {
+    return _enqueue(() => _loadInbox(email, maxResults: maxResults));
   }
 
   Future<List<MailMessage>> _loadInbox(
@@ -226,7 +218,9 @@ class GmailService {
   Future<void> deleteMessage(String email, String id) {
     return _enqueue(() async {
       await _ensureAuthorized(email);
-      await _withApiRetry(() => _requireApi(email).users.messages.delete('me', id));
+      await _withApiRetry(
+        () => _requireApi(email).users.messages.delete('me', id),
+      );
     });
   }
 
