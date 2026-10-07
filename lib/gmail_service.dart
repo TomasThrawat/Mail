@@ -1,8 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 
+import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/gmail/v1.dart';
-import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 
 import 'models.dart';
 
@@ -148,22 +149,24 @@ class GmailService {
     final GmailApi api = _requireApi(email);
 
     final List<Message> refs =
-        (await api.users.messages.list(
-          'me',
-          labelIds: const <String>['INBOX'],
-          maxResults: maxResults,
+        (await _withGmailRetry(
+          () => api.users.messages.list(
+            'me',
+            labelIds: const <String>['INBOX'],
+            maxResults: maxResults,
+          ),
         )).messages ??
         const <Message>[];
 
-    final List<MailMessage> messages = await Future.wait(
-      refs
-          .where((Message ref) => ref.id != null)
-          .map(
-            (Message ref) async => _toMailMessage(
-              await api.users.messages.get('me', ref.id!, format: 'full'),
-            ),
-          ),
-    );
+    // Gmail limits concurrent requests per user. Fetch message bodies
+    // sequentially instead of starting dozens of messages.get calls at once.
+    final List<MailMessage> messages = <MailMessage>[];
+    for (final Message ref in refs.where((Message ref) => ref.id != null)) {
+      final Message message = await _withGmailRetry(
+        () => api.users.messages.get('me', ref.id!, format: 'full'),
+      );
+      messages.add(_toMailMessage(message));
+    }
 
     messages.sort(
       (MailMessage a, MailMessage b) =>
@@ -176,7 +179,9 @@ class GmailService {
 
   Future<void> deleteMessage(String email, String id) async {
     await _ensureAuthorized(email);
-    await _requireApi(email).users.messages.delete('me', id);
+    await _withGmailRetry(
+      () => _requireApi(email).users.messages.delete('me', id),
+    );
   }
 
   Future<void> deleteAllMessages(String email) async {
@@ -190,10 +195,12 @@ class GmailService {
 
     while (true) {
       final List<Message> messages =
-          (await api.users.messages.list(
-            'me',
-            maxResults: batchSize,
-            includeSpamTrash: true,
+          (await _withGmailRetry(
+            () => api.users.messages.list(
+              'me',
+              maxResults: batchSize,
+              includeSpamTrash: true,
+            ),
           )).messages ??
           const <Message>[];
       final List<String> ids = messages
@@ -205,11 +212,13 @@ class GmailService {
         return;
       }
 
-      // Avoid hundreds of concurrent single-message delete calls. Gmail
-      // exposes batchDelete specifically for deleting many message IDs.
-      await api.users.messages.batchDelete(
-        BatchDeleteMessagesRequest()..ids = ids,
-        'me',
+      // Use Gmail's server-side batchDelete instead of hundreds of concurrent
+      // single-message delete calls.
+      await _withGmailRetry(
+        () => api.users.messages.batchDelete(
+          BatchDeleteMessagesRequest()..ids = ids,
+          'me',
+        ),
       );
     }
   }
@@ -227,7 +236,9 @@ class GmailService {
   Future<void> _ensureAuthorized(String email) async {
     if (_apis.containsKey(email)) {
       try {
-        await _requireApi(email).users.getProfile('me');
+        await _withGmailRetry(
+          () => _requireApi(email).users.getProfile('me'),
+        );
         return;
       } catch (error) {
         _apis.remove(email);
@@ -243,6 +254,36 @@ class GmailService {
       throw StateError('No Gmail authorization for $email.');
     }
     return api;
+  }
+
+  Future<T> _withGmailRetry<T>(
+    Future<T> Function() operation,
+  ) async {
+    const int maxRetries = 4;
+    const int baseDelayMilliseconds = 500;
+
+    for (int attempt = 0; ; attempt++) {
+      try {
+        return await operation();
+      } on DetailedApiRequestError catch (error) {
+        final int? status = error.status;
+        final bool retryable =
+            status == 429 ||
+            status == 500 ||
+            status == 502 ||
+            status == 503 ||
+            status == 504;
+        if (!retryable || attempt >= maxRetries) {
+          rethrow;
+        }
+
+        final int delayMilliseconds =
+            baseDelayMilliseconds * (1 << attempt);
+        await Future<void>.delayed(
+          Duration(milliseconds: delayMilliseconds),
+        );
+      }
+    }
   }
 
   MailMessage _toMailMessage(Message message) {
