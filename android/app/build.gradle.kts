@@ -1,6 +1,5 @@
 plugins {
     id("com.android.application")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -45,8 +44,6 @@ android {
 
     buildTypes {
         release {
-            // CI supplies the fixed release keystore through GitHub Actions secrets.
-            // Local builds without those secrets keep the existing debug-signing fallback.
             signingConfig =
                 if (releaseSigningReady) {
                     signingConfigs.getByName("release")
