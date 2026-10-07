@@ -5,6 +5,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/gmail/v1.dart';
 
 import 'models.dart';
+import 'app_logger.dart';
 
 class GmailService {
   GmailService(this.signIn);
@@ -25,88 +26,195 @@ class GmailService {
   final Map<String, GoogleSignInAccount> _users =
       <String, GoogleSignInAccount>{};
   bool _initialized = false;
+  final AppLogger _logger = AppLogger.instance;
 
   Future<void> initialize() async {
     if (_initialized) {
+      await _logger.log('google.initialize.skip');
       return;
     }
-    await signIn.initialize(
-      serverClientId: _serverClientId.isEmpty ? null : _serverClientId,
+    await _logger.log(
+      'google.initialize.start',
+      fields: <String, Object?>{
+        'server_client_id': _serverClientId,
+        'scopes': scopes,
+      },
     );
-    _initialized = true;
+    try {
+      await signIn.initialize(
+        serverClientId: _serverClientId.isEmpty ? null : _serverClientId,
+      );
+      _initialized = true;
+      await _logger.log('google.initialize.success');
+    } catch (error, stackTrace) {
+      await _logger.error('google.initialize.error', error, stackTrace);
+      rethrow;
+    }
   }
 
   Future<MailAccount?> restoreAccount() async {
-    await initialize();
-    final Future<GoogleSignInAccount?>? attempt =
-        signIn.attemptLightweightAuthentication();
-    if (attempt == null) {
-      return null;
-    }
+    await _logger.log('google.restore.start');
+    try {
+      await initialize();
+      final Future<GoogleSignInAccount?>? attempt =
+          signIn.attemptLightweightAuthentication();
+      if (attempt == null) {
+        await _logger.log('google.restore.lightweight_unavailable');
+        return null;
+      }
 
-    final GoogleSignInAccount? user = await attempt;
-    if (user == null) {
-      return null;
-    }
+      final GoogleSignInAccount? user = await attempt;
+      if (user == null) {
+        await _logger.log('google.restore.no_account');
+        return null;
+      }
 
-    return _authorize(user, promptIfNeeded: false);
+      await _logger.log(
+        'google.restore.account_found',
+        fields: <String, Object?>{
+          'email': AppLogger.maskEmail(user.email),
+        },
+      );
+      return _authorize(user, promptIfNeeded: false);
+    } catch (error, stackTrace) {
+      await _logger.error('google.restore.error', error, stackTrace);
+      rethrow;
+    }
   }
 
   Future<MailAccount> authenticateAccount() async {
-    await initialize();
-    if (!signIn.supportsAuthenticate()) {
-      throw StateError('Google Sign-In authentication is unavailable.');
-    }
+    await _logger.log('google.authenticate.start');
+    try {
+      await initialize();
+      final bool supported = signIn.supportsAuthenticate();
+      await _logger.log(
+        'google.authenticate.capability',
+        fields: <String, Object?>{'supports_authenticate': supported},
+      );
+      if (!supported) {
+        throw StateError('Google Sign-In authentication is unavailable.');
+      }
 
-    // Fully revoke the existing Google authorization relationship before a
-    // new interactive sign-in. The official google_sign_in Android example
-    // uses disconnect() for this reset; signOut() alone does not revoke the
-    // authorization relationship and can leave Credential Manager on its
-    // AccountReauth path, which may surface as [16] Account reauth failed.
-    await signIn.disconnect();
+      await _logger.log('google.authenticate.disconnect.start');
+      await signIn.disconnect();
+      await _logger.log('google.authenticate.disconnect.success');
 
-    // Authenticate the account first, then request Gmail scopes separately.
-    final GoogleSignInAccount user = await signIn.authenticate();
-    final MailAccount? account = await _authorize(user, promptIfNeeded: true);
-    if (account == null) {
-      throw StateError('Gmail authorization was not granted.');
+      await _logger.log('google.authenticate.interactive.start');
+      final GoogleSignInAccount user = await signIn.authenticate();
+      await _logger.log(
+        'google.authenticate.interactive.success',
+        fields: <String, Object?>{
+          'email': AppLogger.maskEmail(user.email),
+          'display_name_present': user.displayName?.isNotEmpty == true,
+        },
+      );
+
+      final MailAccount? account = await _authorize(
+        user,
+        promptIfNeeded: true,
+      );
+      if (account == null) {
+        throw StateError('Gmail authorization was not granted.');
+      }
+      await _logger.log(
+        'google.authenticate.complete',
+        fields: <String, Object?>{
+          'email': AppLogger.maskEmail(account.email),
+        },
+      );
+      return account;
+    } catch (error, stackTrace) {
+      await _logger.error('google.authenticate.error', error, stackTrace);
+      rethrow;
     }
-    return account;
   }
 
   Future<MailAccount?> _authorize(
     GoogleSignInAccount user, {
     required bool promptIfNeeded,
   }) async {
-    GoogleSignInClientAuthorization? authorization = await user
-        .authorizationClient
-        .authorizationForScopes(scopes);
-
-    if (authorization == null && promptIfNeeded) {
-      authorization = await user.authorizationClient.authorizeScopes(scopes);
-    }
-    if (authorization == null) {
-      return null;
-    }
-
-    _apis[user.email] = GmailApi(authorization.authClient(scopes: scopes));
-    _users[user.email] = user;
-
-    return MailAccount(
-      email: user.email,
-      displayName: user.displayName,
-      photoUrl: user.photoUrl,
+    await _logger.log(
+      'google.authorization.start',
+      fields: <String, Object?>{
+        'email': AppLogger.maskEmail(user.email),
+        'prompt_if_needed': promptIfNeeded,
+        'scopes': scopes,
+      },
     );
+    try {
+      GoogleSignInClientAuthorization? authorization = await user
+          .authorizationClient
+          .authorizationForScopes(scopes);
+
+      await _logger.log(
+        'google.authorization.existing_result',
+        fields: <String, Object?>{
+          'available': authorization != null,
+        },
+      );
+
+      if (authorization == null && promptIfNeeded) {
+        await _logger.log('google.authorization.prompt.start');
+        authorization = await user.authorizationClient.authorizeScopes(scopes);
+        await _logger.log(
+          'google.authorization.prompt.result',
+          fields: <String, Object?>{
+            'available': authorization != null,
+          },
+        );
+      }
+      if (authorization == null) {
+        await _logger.log('google.authorization.not_granted');
+        return null;
+      }
+
+      _apis[user.email] = GmailApi(authorization.authClient(scopes: scopes));
+      _users[user.email] = user;
+
+      await _logger.log(
+        'google.authorization.success',
+        fields: <String, Object?>{
+          'email': AppLogger.maskEmail(user.email),
+        },
+      );
+
+      return MailAccount(
+        email: user.email,
+        displayName: user.displayName,
+        photoUrl: user.photoUrl,
+      );
+    } catch (error, stackTrace) {
+      await _logger.error('google.authorization.error', error, stackTrace);
+      rethrow;
+    }
   }
 
   Future<void> refreshAuthorization(String email) async {
-    final GoogleSignInAccount? user = _users[email];
-    if (user == null) {
-      throw StateError('The selected Google account is not available.');
-    }
-    final MailAccount? account = await _authorize(user, promptIfNeeded: true);
-    if (account == null) {
-      throw StateError('Gmail authorization was not granted.');
+    await _logger.log(
+      'google.refresh_authorization.start',
+      fields: <String, Object?>{'email': AppLogger.maskEmail(email)},
+    );
+    try {
+      final GoogleSignInAccount? user = _users[email];
+      if (user == null) {
+        throw StateError('The selected Google account is not available.');
+      }
+      final MailAccount? account = await _authorize(
+        user,
+        promptIfNeeded: true,
+      );
+      if (account == null) {
+        throw StateError('Gmail authorization was not granted.');
+      }
+      await _logger.log('google.refresh_authorization.success');
+    } catch (error, stackTrace) {
+      await _logger.error(
+        'google.refresh_authorization.error',
+        error,
+        stackTrace,
+        fields: <String, Object?>{'email': AppLogger.maskEmail(email)},
+      );
+      rethrow;
     }
   }
 
@@ -173,19 +281,35 @@ class GmailService {
   }
 
   Future<void> signOutCurrent() async {
-    // Disconnect rather than only sign out so the next login starts from a
-    // clean Credential Manager authorization relationship.
-    await signIn.disconnect();
-    _apis.clear();
-    _users.clear();
+    await _logger.log('google.signout.start');
+    try {
+      await signIn.disconnect();
+      _apis.clear();
+      _users.clear();
+      await _logger.log('google.signout.success');
+    } catch (error, stackTrace) {
+      await _logger.error('google.signout.error', error, stackTrace);
+      rethrow;
+    }
   }
 
   Future<void> _ensureAuthorized(String email) async {
+    await _logger.log(
+      'gmail.ensure_authorized.start',
+      fields: <String, Object?>{'email': AppLogger.maskEmail(email)},
+    );
     if (_apis.containsKey(email)) {
       try {
         await _requireApi(email).users.getProfile('me');
+        await _logger.log('gmail.ensure_authorized.cached_success');
         return;
-      } catch (_) {
+      } catch (error, stackTrace) {
+        await _logger.error(
+          'gmail.ensure_authorized.cached_failed',
+          error,
+          stackTrace,
+          fields: <String, Object?>{'email': AppLogger.maskEmail(email)},
+        );
         _apis.remove(email);
       }
     }
