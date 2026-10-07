@@ -45,8 +45,20 @@ jobs:
       - name: Test
         run: flutter test
 
+      - name: Validate Google OAuth configuration
+        env:
+          GOOGLE_SERVER_CLIENT_ID: ${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
+        run: |
+          if [ -z "$GOOGLE_SERVER_CLIENT_ID" ]; then
+            echo "::error::Missing GitHub secret GOOGLE_SERVER_CLIENT_ID (the Web OAuth 2.0 client ID ending in .apps.googleusercontent.com)."
+            exit 1
+          fi
+
       - name: Build arm64 release APK
-        run: flutter build apk --release --target-platform android-arm64
+        env:
+          GOOGLE_SERVER_CLIENT_ID: ${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
+        run: |
+          flutter build apk             --release             --target-platform android-arm64             --dart-define=GOOGLE_SERVER_CLIENT_ID="$GOOGLE_SERVER_CLIENT_ID"
 
       - name: Upload APK
         uses: actions/upload-artifact@v7
