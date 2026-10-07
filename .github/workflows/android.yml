@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       GIT_CONFIG_COUNT: 1
       GIT_CONFIG_KEY_0: init.defaultBranch
@@ -75,11 +75,11 @@ jobs:
 
       - name: Validate release signing key
         env:
-          MAIL_RELEASE_KEYSTORE_BASE64: ${{ secrets.MAIL_RELEASE_KEYSTORE_BASE64 }}
-          MAIL_KEYSTORE_PASSWORD: ${{ secrets.MAIL_KEYSTORE_PASSWORD }}
-          MAIL_KEY_ALIAS: ${{ secrets.MAIL_KEY_ALIAS }}
-          MAIL_KEY_PASSWORD: ${{ secrets.MAIL_KEY_PASSWORD }}
-          MAIL_KEYSTORE_PATH: ${{ runner.temp }}/mail-release.jks
+          MAIL_RELEASE_KEYSTORE_BASE64: \${{ secrets.MAIL_RELEASE_KEYSTORE_BASE64 }}
+          MAIL_KEYSTORE_PASSWORD: \${{ secrets.MAIL_KEYSTORE_PASSWORD }}
+          MAIL_KEY_ALIAS: \${{ secrets.MAIL_KEY_ALIAS }}
+          MAIL_KEY_PASSWORD: \${{ secrets.MAIL_KEY_PASSWORD }}
+          MAIL_KEYSTORE_PATH: \${{ runner.temp }}/mail-release.jks
         run: |
           set -euo pipefail
           test -n "$MAIL_RELEASE_KEYSTORE_BASE64"
@@ -113,11 +113,11 @@ jobs:
       - name: Build arm64 release APK
         env:
           GOOGLE_SERVER_CLIENT_ID: 1057557137418-shkm3tmihedijreur8u8lvf3d84tnpmo.apps.googleusercontent.com
-          MAIL_RELEASE_KEYSTORE_BASE64: ${{ secrets.MAIL_RELEASE_KEYSTORE_BASE64 }}
-          MAIL_KEYSTORE_PASSWORD: ${{ secrets.MAIL_KEYSTORE_PASSWORD }}
-          MAIL_KEY_ALIAS: ${{ secrets.MAIL_KEY_ALIAS }}
-          MAIL_KEY_PASSWORD: ${{ secrets.MAIL_KEY_PASSWORD }}
-          MAIL_KEYSTORE_PATH: ${{ runner.temp }}/mail-release.jks
+          MAIL_RELEASE_KEYSTORE_BASE64: \${{ secrets.MAIL_RELEASE_KEYSTORE_BASE64 }}
+          MAIL_KEYSTORE_PASSWORD: \${{ secrets.MAIL_KEYSTORE_PASSWORD }}
+          MAIL_KEY_ALIAS: \${{ secrets.MAIL_KEY_ALIAS }}
+          MAIL_KEY_PASSWORD: \${{ secrets.MAIL_KEY_PASSWORD }}
+          MAIL_KEYSTORE_PATH: \${{ runner.temp }}/mail-release.jks
         run: |
           set -euo pipefail
           printf '%s' "$MAIL_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$MAIL_KEYSTORE_PATH"
