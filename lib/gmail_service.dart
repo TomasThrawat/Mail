@@ -54,9 +54,10 @@ class GmailService {
       throw StateError('Google Sign-In authentication is unavailable.');
     }
 
-    final GoogleSignInAccount user = await signIn.authenticate(
-      scopeHint: scopes,
-    );
+    // Authenticate the account first, then request Gmail scopes separately.
+    // This is the recommended google_sign_in 7.x flow and avoids the optional
+    // combined Credential Manager authentication+authorization path.
+    final GoogleSignInAccount user = await signIn.authenticate();
     final MailAccount? account = await _authorize(user, promptIfNeeded: true);
     if (account == null) {
       throw StateError('Gmail authorization was not granted.');
